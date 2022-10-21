@@ -1,0 +1,22 @@
+[package]
+name = "stockbook-stamp-macro"
+version = "0.1.0"
+authors = ["Karol Belina <karolbelina@gmail.com>"]
+edition = "2021"
+description = "Implementation detail of the `stockbook` crate"
+readme = false
+repository = "https://github.com/karolbelina/stockbook"
+license = "MIT"
+build = "build.rs"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+image = "0.24"
+proc-macro2 = "1"
+syn = { version = "1", features = ["full"] }
+quote = "1"
+
+[build-dependencies]
+rustc_version = "0.4"

@@ -1,0 +1,19 @@
+[package]
+name = "stockbook"
+version = "0.1.0"
+authors = ["Karol Belina <karolbelina@gmail.com>"]
+edition = "2021"
+description = "1-bit image embedding at compile time"
+readme = "README.md"
+repository = "https://github.com/karolbelina/stockbook"
+license = "MIT"
+keywords = ["image", "1-bit", "include"]
+categories = ["embedded", "encoding", "graphics", "no-std"]
+documentation = "https://docs.rs/stockbook"
+exclude = [".github", "docs"]
+
+[dependencies]
+stockbook-stamp-macro = { version = "=0.1.0", path = "macro" }
+
+[workspace]
+members = ["macro"]
