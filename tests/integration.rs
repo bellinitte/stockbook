@@ -1,6 +1,6 @@
-use stockbook::{stamp, Color, Stamp};
+use stockbook::{stamp, Color, Size, Stamp};
 
-static STAMP: Stamp = stamp!("tests/assets/checkerboard_2x2.png");
+static STAMP: Stamp<Size<2, 2>> = stamp!("tests/assets/checkerboard_2x2.png");
 
 #[test]
 fn integration() {

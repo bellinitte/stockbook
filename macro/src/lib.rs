@@ -24,13 +24,13 @@ use syn::{
 ///
 /// # Examples
 ///
-/// Assume there are two files in the same directory: `image.png` and `main.rs` with
-/// the following contents:
+/// Assume there are two files in the same directory: a 16x12 pixel image
+/// `image.png`, and a `main.rs` with the following contents:
 ///
 /// ```rust,ignore
-/// use stockbook::{stamp, Stamp};
+/// use stockbook::{stamp, Size, Stamp};
 ///
-/// static IMAGE: Stamp = stamp!("image.png");
+/// static IMAGE: Stamp<Size<16, 12>> = stamp!("image.png");
 /// ```
 ///
 /// Compiling `main.rs` is going to statically embed the image in the binary.
@@ -46,11 +46,11 @@ use syn::{
 /// For example, this fails to compile:
 ///
 /// ```rust,ignore
-/// use stockbook::{stamp, Stamp};
+/// use stockbook::{stamp, Size, Stamp};
 ///
 /// const IMAGE_PATH: &str = "image.png";
 ///
-/// static IMAGE: Stamp = stamp!(IMAGE_PATH); // passing an identifier, not a string literal
+/// static IMAGE: Stamp<Size<16, 12>> = stamp!(IMAGE_PATH); // passing an identifier, not a string literal
 /// ```
 ///
 /// ## Relative paths
@@ -192,6 +192,10 @@ impl ToTokens for Stamp {
             })),
         };
 
-        tokens.extend(quote! { unsafe { Stamp::from_raw_unchecked(#width, #height, #array) } });
+        tokens.extend(quote! {
+            unsafe {
+                ::stockbook::Stamp::<::stockbook::Size<#width, #height>>::from_raw_unchecked(#array)
+            }
+        });
     }
 }

@@ -7,12 +7,13 @@
 Stockbook embeds 1-bit raster images in your code at compile time.
 
 Designed primarily for `#![no_std]` usage, in embedded or other program-memory-constrained environments.
+
 ```toml
 [dependencies]
 stockbook = "0.1.1"
 ```
 
-The main functionality of Stockbook is the `stamp!` macro, which lets you include data similarly to how [`include_bytes!`](https://doc.rust-lang.org/stable/core/macro.include_bytes.html) does, but from an image, specifically a 1-bit black and white image. The macro returns a `Stamp` struct, which just holds the image's width, height, and a static reference to the pixel data. The pixel data is represented internally as an array of bytes, in which individual bits correspond to individual pixels.
+The main functionality of Stockbook is the `stamp!` macro, which lets you include data similarly to how [`include_bytes!`](https://doc.rust-lang.org/stable/core/macro.include_bytes.html) does, but from an image, specifically a 1-bit black and white image. The macro returns a `Stamp` type, which just holds a static reference to the pixel data &mdash; the size of the image is encoded statically in the type. The pixel data is represented internally as an array of bytes, in which individual bits correspond to individual pixels.
 
 ## Example
 
@@ -23,9 +24,9 @@ File `assets/star.png` (scaled x8 for preview, originally 12x12 px):
 File `src/lib.rs`:
 
 ```rust
-use stockbook::{stamp, Color, Stamp};
+use stockbook::{stamp, Color, Size, Stamp};
 
-static STAR_SPRITE: Stamp = stamp!("assets/star.png");
+static STAR_SPRITE: Stamp<Size<12, 12>> = stamp!("assets/star.png");
 
 pub fn draw_star() {
     for (x, y, color) in STAR_SPRITE.pixels() {

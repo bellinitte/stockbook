@@ -6,9 +6,10 @@
 //! The main functionality of Stockbook is the [`stamp!`] macro, which lets you
 //! include data similarly to how [`include_bytes!`] does, but from an image,
 //! specifically a 1-bit black and white image. The macro returns a [`Stamp`]
-//! struct, which just holds the image's width, height, and a static reference to
-//! the pixel data. The pixel data is represented internally as an array of bytes,
-//! in which individual bits correspond to individual pixels.
+//! type, which just holds a static reference to the pixel data &mdash; the size of
+//! the image is encoded statically in the type. The pixel data is represented
+//! internally as an array of bytes, in which individual bits correspond to
+//! individual pixels.
 //!
 //! ## Example
 //!
@@ -19,7 +20,7 @@
 //! File `src/lib.rs`:
 //!
 //! ```rust
-//! use stockbook::{stamp, Color, Stamp};
+//! use stockbook::{stamp, Color, Size, Stamp};
 //!
 //! # const STAR_DATA: &[u8] = &[
 //! #     0b00000110, 0b00000000, 0b01100000, 0b00001111, 0b00000000, 0b11110000,
@@ -43,9 +44,9 @@
 //! # static mut ACTUAL_PIXELS: Vec<(usize, usize)> = Vec::new();
 //! #
 //! # macro_rules! stamp {
-//! #     ($path:literal) => { Stamp::from_raw(12, 12, &STAR_DATA) };
+//! #     ($path:literal) => { Stamp::<Size<12, 12>>::from_raw(&STAR_DATA) };
 //! # }
-//! static STAR_SPRITE: Stamp = stamp!("assets/star.png");
+//! static STAR_SPRITE: Stamp<Size<12, 12>> = stamp!("assets/star.png");
 //!
 //! pub fn draw_star() {
 //!     for (x, y, color) in STAR_SPRITE.pixels() {
@@ -80,10 +81,14 @@
 //! this feature is unstable and may change or stop compiling at any time.
 
 #![no_std]
+#![warn(missing_docs)]
 
 mod iter;
+mod meta;
 
-pub use iter::*;
+use iter::*;
+
+pub use meta::*;
 pub use stockbook_stamp_macro::stamp;
 
 /// Rectangular, 1-bit, raster image.
@@ -96,13 +101,12 @@ pub use stockbook_stamp_macro::stamp;
 /// individual bits correspond to individual pixels. The last byte must be padded
 /// and the rest of the slice is completely ignored.
 #[derive(Debug, Clone, Copy)]
-pub struct Stamp {
-    width: usize,
-    height: usize,
+pub struct Stamp<S: traits::Size = dynamic::Size> {
+    size: S,
     data: &'static [u8],
 }
 
-impl Stamp {
+impl<const WIDTH: usize, const HEIGHT: usize> Stamp<Size<WIDTH, HEIGHT>> {
     /// Constructs a stamp and validates the length of `data`.
     ///
     /// This is a quasi-internal API &mdash; the intended way of constructing [`Stamp`]s
@@ -114,36 +118,33 @@ impl Stamp {
     /// pixels, which is assumed to be `width * height`.
     ///
     /// For example, here the dimensions of the stamp are 3x3, so 9 pixels in total, and
-    /// so `data` must contain at least 9 bits (2 bytes rounding up), which it does.
+    /// so `data` must contain at least 9 bits (2 bytes rounding up), which it does:
     ///
     /// ```rust
-    /// # use stockbook::Stamp;
-    /// let stamp = Stamp::from_raw(3, 3, &[0b11111111, 0b1_0000000]);
+    /// # use stockbook::{Size, Stamp};
+    /// let stamp = Stamp::<Size<3, 3>>::from_raw(&[0b11111111, 0b1_0000000]);
     /// ```
     ///
-    /// Here, only 8 bits are provided, so the function panics.
+    /// Here, only 8 bits are provided, so the function panics:
     ///
     /// ```rust,should_panic
-    /// # use stockbook::Stamp;
-    /// let stamp = Stamp::from_raw(3, 3, &[0b11111111]);
+    /// # use stockbook::{Size, Stamp};
+    /// let stamp = Stamp::<Size<3, 3>>::from_raw(&[0b11111111]);
     /// ```
     ///
-    /// Similarly here, but in a const context, the program fails to compile.
+    /// Similarly here, but in a const context, the program fails to compile:
     ///
     /// ```rust,compile_fail
-    /// # use stockbook::Stamp;
-    /// static STAMP: Stamp = Stamp::from_raw(3, 3, &[0b11111111]);
+    /// # use stockbook::{Size, Stamp};
+    /// static STAMP: Stamp<Size<3, 3>> = Stamp::<Size<3, 3>>::from_raw(&[0b11111111]);
     /// ```
-    pub const fn from_raw(width: usize, height: usize, data: &'static [u8]) -> Self {
-        if Self::bytes_count(width * height) > data.len() {
+    pub const fn from_raw(data: &'static [u8]) -> Self {
+        if Self::bytes_count(WIDTH * HEIGHT) > data.len() {
             panic!("length of `data` doesn't match the number of pixels");
         }
 
-        Self {
-            width,
-            height,
-            data,
-        }
+        // SAFETY: we just checked that the length of `data` matches the number of pixels
+        unsafe { Self::from_raw_unchecked(data) }
     }
 
     /// Constructs a stamp without any checks on the length of `data`.
@@ -153,56 +154,56 @@ impl Stamp {
     ///
     /// # Safety
     ///
-    /// Callers must ensure that the length of `data` does match the number
-    /// of pixels.
-    pub const unsafe fn from_raw_unchecked(
-        width: usize,
-        height: usize,
-        data: &'static [u8],
-    ) -> Self {
-        Self {
-            width,
-            height,
-            data,
+    /// Callers must ensure that the length of `data` matches the number of pixels.
+    pub const unsafe fn from_raw_unchecked(data: &'static [u8]) -> Self {
+        Self { size: Size, data }
+    }
+}
+
+impl<const WIDTH: usize, const HEIGHT: usize> Stamp<Size<WIDTH, HEIGHT>> {
+    /// Erases a type-level information about the stamp's size, converting a
+    /// `Stamp<Size<WIDTH, HEIGHT>>` to a `Stamp<dynamic::Size>`. Useful if you don't
+    /// care about the size of the stamp at compile time, or if you want to convert
+    /// multiple different stamps into a single type. Do note, however, that using a
+    /// dynamic size has a runtime cost &mdash; the width and height have to be kept
+    /// _somewhere_.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use stockbook::{stamp, Stamp};
+    ///
+    /// # macro_rules! stamp {
+    /// #     ($path:literal) => { Stamp::<::stockbook::Size<3, 2>>::from_raw(&[0b000_000_00]) };
+    /// # }
+    /// static IMAGE: Stamp = stamp!("image.png").downgrade();
+    /// ```
+    pub const fn downgrade(self) -> Stamp {
+        Stamp {
+            size: self.size.downgrade(),
+            data: self.data,
         }
     }
+}
 
+impl<S: traits::Size> Stamp<S> {
     /// Size of the stamp in pixels &mdash; width and height, or columns and rows.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Stamp};
+    /// use stockbook::{stamp, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 2, &[0b000_000_00]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 2>>::from_raw(&[0b000_000_00]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("image_3x2.png");
+    /// static IMAGE: Stamp<Size<3, 2>> = stamp!("image_3x2.png");
     ///
     /// assert_eq!(IMAGE.size(), [3, 2]);
     /// ```
     #[inline]
-    pub const fn size(&self) -> [usize; 2] {
-        [self.width, self.height]
-    }
-
-    /// Number of pixels in the stamp.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use stockbook::{stamp, Stamp};
-    ///
-    /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 2, &[0b000_000_00]) };
-    /// # }
-    /// static IMAGE: Stamp = stamp!("image_3x2.png");
-    ///
-    /// assert_eq!(IMAGE.pixel_count(), 6);
-    /// ```
-    #[inline]
-    pub const fn pixel_count(&self) -> usize {
-        self.width * self.height
+    pub fn size(&self) -> [usize; 2] {
+        self.size.size()
     }
 
     /// Width of the stamp in pixels.
@@ -210,18 +211,18 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Stamp};
+    /// use stockbook::{stamp, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 2, &[0b000_000_00]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 2>>::from_raw(&[0b000_000_00]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("image_3x2.png");
+    /// static IMAGE: Stamp<Size<3, 2>> = stamp!("image_3x2.png");
     ///
     /// assert_eq!(IMAGE.width(), 3);
     /// ```
     #[inline]
-    pub const fn width(&self) -> usize {
-        self.width
+    pub fn width(&self) -> usize {
+        self.size()[0]
     }
 
     /// Height of the stamp in pixels.
@@ -229,18 +230,37 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Stamp};
+    /// use stockbook::{stamp, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #    ($path:literal) => { Stamp::from_raw(3, 2, &[0b000_000_00]) };
+    /// #    ($path:literal) => { Stamp::<Size<3, 2>>::from_raw(&[0b000_000_00]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("image_3x2.png");
+    /// static IMAGE: Stamp<Size<3, 2>> = stamp!("image_3x2.png");
     ///
     /// assert_eq!(IMAGE.height(), 2);
     /// ```
     #[inline]
-    pub const fn height(&self) -> usize {
-        self.height
+    pub fn height(&self) -> usize {
+        self.size()[1]
+    }
+
+    /// Number of pixels in the stamp.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use stockbook::{stamp, Size, Stamp};
+    ///
+    /// # macro_rules! stamp {
+    /// #     ($path:literal) => { Stamp::<Size<3, 2>>::from_raw(&[0b000_000_00]) };
+    /// # }
+    /// static IMAGE: Stamp<Size<3, 2>> = stamp!("image_3x2.png");
+    ///
+    /// assert_eq!(IMAGE.pixel_count(), 6);
+    /// ```
+    #[inline]
+    pub fn pixel_count(&self) -> usize {
+        self.width() * self.height()
     }
 
     /// Checks if a given coordinate is within the bounds of the image.
@@ -248,20 +268,20 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Color, Stamp};
+    /// use stockbook::{stamp, Color, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(5, 4, &[0b00000000, 0b00000000, 0b0000_0000]) };
+    /// #     ($path:literal) => { Stamp::<Size<5, 4>>::from_raw(&[0b00000000, 0b00000000, 0b0000_0000]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("image_5x4.png");
+    /// static IMAGE: Stamp<Size<5, 4>> = stamp!("image_5x4.png");
     ///
     /// assert!(IMAGE.is_within_bounds(0, 0));
     /// assert!(IMAGE.is_within_bounds(4, 3));
     /// assert!(!IMAGE.is_within_bounds(5, 3));
     /// assert!(!IMAGE.is_within_bounds(4, 4));
     /// ```
-    pub const fn is_within_bounds(&self, x: usize, y: usize) -> bool {
-        x < self.width && y < self.height
+    pub fn is_within_bounds(&self, x: usize, y: usize) -> bool {
+        x < self.width() && y < self.height()
     }
 
     /// Returns an iterator over all pixels of a [`Stamp`]. The iteration order is
@@ -271,12 +291,12 @@ impl Stamp {
     /// # Example
     ///
     /// ```rust
-    /// use stockbook::{stamp, Color, Stamp};
+    /// use stockbook::{stamp, Color, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 3, &[0b101_010_10, 0b1_0000000]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 3>>::from_raw(&[0b101_010_10, 0b1_0000000]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("checkerboard_3x3.png");
+    /// static IMAGE: Stamp<Size<3, 3>> = stamp!("checkerboard_3x3.png");
     ///
     /// let mut pixels = IMAGE.pixels();
     ///
@@ -291,7 +311,7 @@ impl Stamp {
     /// assert_eq!(pixels.next(), Some((2, 2, Color::White)));
     /// assert_eq!(pixels.next(), None);
     /// ```
-    pub fn pixels(&self) -> Pixels<'_> {
+    pub fn pixels(&self) -> Pixels<'_, S> {
         Pixels::new(self)
     }
 
@@ -305,12 +325,12 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Color, Stamp};
+    /// use stockbook::{stamp, Color, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 3, &[0b101_010_10, 0b1_0000000]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 3>>::from_raw(&[0b101_010_10, 0b1_0000000]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("checkerboard_3x3.png");
+    /// static IMAGE: Stamp<Size<3, 3>> = stamp!("checkerboard_3x3.png");
     ///
     /// assert_eq!(IMAGE.get_color(0, 0), Color::White);
     /// assert_eq!(IMAGE.get_color(1, 0), Color::Black);
@@ -326,12 +346,12 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Color, Stamp};
+    /// use stockbook::{stamp, Color, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 3, &[0b101_010_10, 0b1_0000000]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 3>>::from_raw(&[0b101_010_10, 0b1_0000000]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("checkerboard_3x3.png");
+    /// static IMAGE: Stamp<Size<3, 3>> = stamp!("checkerboard_3x3.png");
     ///
     /// assert_eq!(IMAGE.get_color_checked(0, 0), Some(Color::White));
     /// assert_eq!(IMAGE.get_color_checked(1, 0), Some(Color::Black));
@@ -361,12 +381,12 @@ impl Stamp {
     /// # Examples
     ///
     /// ```rust
-    /// use stockbook::{stamp, Color, Stamp};
+    /// use stockbook::{stamp, Color, Size, Stamp};
     ///
     /// # macro_rules! stamp {
-    /// #     ($path:literal) => { Stamp::from_raw(3, 3, &[0b101_010_10, 0b1_0000000]) };
+    /// #     ($path:literal) => { Stamp::<Size<3, 3>>::from_raw(&[0b101_010_10, 0b1_0000000]) };
     /// # }
-    /// static IMAGE: Stamp = stamp!("checkerboard_3x3.png");
+    /// static IMAGE: Stamp<Size<3, 3>> = stamp!("checkerboard_3x3.png");
     ///
     /// // SAFETY: provided coordinates are guaranteed to be within the bounds
     /// // of the stamp
@@ -375,7 +395,7 @@ impl Stamp {
     /// assert_eq!(unsafe { IMAGE.get_color_unchecked(0, 1) }, Color::Black);
     /// ```
     pub unsafe fn get_color_unchecked(&self, x: usize, y: usize) -> Color {
-        let idx = y * self.width + x;
+        let idx = y * self.width() + x;
         let byte = self.data.get_unchecked(idx / 8);
         let mask = 0b10000000 >> (idx % 8);
 
@@ -387,7 +407,7 @@ impl Stamp {
     }
 }
 
-impl Stamp {
+impl<S: traits::Size> Stamp<S> {
     const fn bytes_count(pixel_count: usize) -> usize {
         let d = pixel_count / 8;
         let r = pixel_count % 8;
@@ -400,7 +420,7 @@ impl Stamp {
     }
 }
 
-/// Represents the color of a pixel of the [`Stamp`].
+/// Color of a pixel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     /// Black (`#000000ff` or `rgba(0, 0, 0, 255)`)
