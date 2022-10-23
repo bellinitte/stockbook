@@ -12,39 +12,43 @@
 //!
 //! ## Example
 //!
-//! File `assets/invader.png` (scaled x8 for preview, originally 11x8 px):
+//! File `assets/star.png` (scaled x8 for preview, originally 12x12 px):
 //!
-//! ![Invader](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFgAAABACAYAAACeELDCAAAAAXNSR0IArs4c6QAAAPNJREFUeJzt3EGOwjAQAEF7xf+/HH6wPoxKBtR1Jgm05jCyUPZa61kDz/P/5Xvvye05/f3/RlfnqMBYgbECYwXGCowVGNtruAef3N6Tbz+/CcYKjBUYKzBWYKzAWIGx8R582jO/XefBH67AWIGxAmMFxgqMFRg77sHTPfe0R+o9Wj//dP8mGCswVmCswFiBsQJjBcb28+sHupc1wViBsQJjBcYKjBUYKzD2On3g9nnubdPf3wRjBcYKjBUYKzBWYKzA2HEPnvr290VMNcFYgbECYwXGCowVGCswdv19ESe3/9871QRjBcYKjBUYKzBWYKzA2Bsu1TB2ctjAtQAAAABJRU5ErkJggg==)
+//! ![Star](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAT5JREFUeJzt3FEKwyAUAEEtvf+V0yP4YWUSsnMCy/Igxtg5xrjGjV3X3vLmnH9ayRkfvYC3KwBWAKwAWAGwAmAFwAqAFQArAFYArABYAbACYAXA5sDnAbvv+3fp84ImACsAVgCsAFgBsAJgBcAKgBUAKwBWAKwAWAGwAmAFwOalX8i/XBOAFQArAFYArABYAbACYMvvgtom7Fl9d9QEYAXACoAVACsAVgCsANj2/YC37xN27xc0AVgBsAJgBcAKgBUAKwB2/J7w0/cJp+8RNwFYAbACYAXACoAVACsA1nnAps4DHq4AWAGwAmAFwAqAFQD76gWs7D5n332f0gRgBcAKgBUAKwBWAKwAGL8nrP+/X/++JgArAFYArABYAbACYAXAjp8H6Of8ldX6Tu8TmgCsAFgBsAJgBcAKgBUA+wFZhym1RhU7SwAAAABJRU5ErkJggg==)
 //!
 //! File `src/lib.rs`:
 //!
 //! ```rust
 //! use stockbook::{stamp, Color, Stamp};
 //!
-//! # const INVADER_DATA: &[u8] = &[
-//! #     0b00100000, 0b10000010, 0b00100000, 0b11111110,
-//! #     0b00110111, 0b01101111, 0b11111111, 0b01111111,
-//! #     0b01101000, 0b00101000, 0b11011000
+//! # const STAR_DATA: &[u8] = &[
+//! #     0b00000110, 0b00000000, 0b01100000, 0b00001111, 0b00000000, 0b11110000,
+//! #     0b11111111, 0b11110111, 0b11111110, 0b00111111, 0b11000001, 0b11111000,
+//! #     0b00111111, 0b11000011, 0b10011100, 0b01110000, 0b11100110, 0b00000110,
 //! # ];
 //! #
 //! # const EXPECTED_PIXELS: &[(usize, usize)] = &[
-//! #     (2, 0), (8, 0), (3, 1), (7, 1), (2, 2), (3, 2), (4, 2), (5, 2),
-//! #     (6, 2), (7, 2), (8, 2), (1, 3), (2, 3), (4, 3), (5, 3), (6, 3),
-//! #     (8, 3), (9, 3), (0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4),
-//! #     (6, 4), (7, 4), (8, 4), (9, 4), (10, 4), (0, 5), (2, 5), (3, 5),
-//! #     (4, 5), (5, 5), (6, 5), (7, 5), (8, 5), (10, 5), (0, 6), (2, 6),
-//! #     (8, 6), (10, 6), (3, 7), (4, 7), (6, 7), (7, 7),
+//! #     (5, 0), (6, 0), (5, 1), (6, 1), (4, 2), (5, 2), (6, 2), (7, 2),
+//! #     (4, 3), (5, 3), (6, 3), (7, 3), (0, 4), (1, 4), (2, 4), (3, 4),
+//! #     (4, 4), (5, 4), (6, 4), (7, 4), (8, 4), (9, 4), (10, 4), (11, 4),
+//! #     (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5), (7, 5), (8, 5),
+//! #     (9, 5), (10, 5), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6),
+//! #     (8, 6), (9, 6), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7),
+//! #     (2, 8), (3, 8), (4, 8), (5, 8), (6, 8), (7, 8), (8, 8), (9, 8),
+//! #     (2, 9), (3, 9), (4, 9), (7, 9), (8, 9), (9, 9), (1, 10), (2, 10),
+//! #     (3, 10), (8, 10), (9, 10), (10, 10), (1, 11), (2, 11), (9, 11),
+//! #     (10, 11),
 //! # ];
 //! #
 //! # static mut ACTUAL_PIXELS: Vec<(usize, usize)> = Vec::new();
 //! #
 //! # macro_rules! stamp {
-//! #     ($path:literal) => { Stamp::from_raw(11, 8, &INVADER_DATA) };
+//! #     ($path:literal) => { Stamp::from_raw(12, 12, &STAR_DATA) };
 //! # }
-//! static INVADER_SPRITE: Stamp = stamp!("assets/invader.png");
+//! static STAR_SPRITE: Stamp = stamp!("assets/star.png");
 //!
-//! pub fn draw_invader() {
-//!     for (x, y, color) in INVADER_SPRITE.pixels() {
+//! pub fn draw_star() {
+//!     for (x, y, color) in STAR_SPRITE.pixels() {
 //!         match color {
 //!             Color::Black => {}, // Treat as transparent
 //!             Color::White => draw_pixel_at(x, y),
@@ -56,7 +60,7 @@
 //!     /* ... */
 //!     # unsafe { ACTUAL_PIXELS.push((x, y)); }
 //! }
-//! # draw_invader();
+//! # draw_star();
 //! # assert_eq!(unsafe { ACTUAL_PIXELS.as_slice() }, EXPECTED_PIXELS);
 //! ```
 //!

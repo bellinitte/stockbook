@@ -16,19 +16,19 @@ The main functionality of Stockbook is the `stamp!` macro, which lets you includ
 
 ## Example
 
-File `assets/invader.png` (scaled x8 for preview, originally 11x8 px):
+File `assets/star.png` (scaled x8 for preview, originally 12x12 px):
 
-![Invader](https://github.com/karolbelina/stockbook/blob/main/docs/invader.png?raw=true)
+![Star](https://github.com/karolbelina/stockbook/blob/main/docs/star.png?raw=true)
 
 File `src/lib.rs`:
 
 ```rust
 use stockbook::{stamp, Color, Stamp};
 
-static INVADER_SPRITE: Stamp = stamp!("assets/invader.png");
+static STAR_SPRITE: Stamp = stamp!("assets/star.png");
 
-pub fn draw_invader() {
-    for (x, y, color) in PLAYER_SPRITE.pixels() {
+pub fn draw_star() {
+    for (x, y, color) in STAR_SPRITE.pixels() {
         match color {
             Color::Black => {}, // Treat as transparent
             Color::White => draw_pixel_at(x, y),
