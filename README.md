@@ -9,7 +9,7 @@ Stockbook embeds 1-bit raster images in your code at compile time.
 Designed primarily for `#![no_std]` usage, in embedded or other program-memory-constrained environments.
 ```toml
 [dependencies]
-stockbook = "0.1.0"
+stockbook = "0.1.1"
 ```
 
 The main functionality of Stockbook is the `stamp!` macro, which lets you include data similarly to how [`include_bytes!`](https://doc.rust-lang.org/stable/core/macro.include_bytes.html) does, but from an image, specifically a 1-bit black and white image. The macro returns a `Stamp` struct, which just holds the image's width, height, and a static reference to the pixel data. The pixel data is represented internally as an array of bytes, in which individual bits correspond to individual pixels.
