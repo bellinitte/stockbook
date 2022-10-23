@@ -10,7 +10,7 @@ Designed primarily for `#![no_std]` usage, in embedded or other program-memory-c
 
 ```toml
 [dependencies]
-stockbook = "0.1.1"
+stockbook = "0.2.0
 ```
 
 The main functionality of Stockbook is the `stamp!` macro, which lets you include data similarly to how [`include_bytes!`](https://doc.rust-lang.org/stable/core/macro.include_bytes.html) does, but from an image, specifically a 1-bit black and white image. The macro returns a `Stamp` type, which just holds a static reference to the pixel data &mdash; the size of the image is encoded statically in the type. The pixel data is represented internally as an array of bytes, in which individual bits correspond to individual pixels.
