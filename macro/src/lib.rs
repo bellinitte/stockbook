@@ -28,9 +28,9 @@ use syn::{
 /// `image.png`, and a `main.rs` with the following contents:
 ///
 /// ```rust,ignore
-/// use stockbook::{stamp, Size, Stamp};
+/// use stockbook::{stamp, Stamp};
 ///
-/// static IMAGE: Stamp<Size<16, 12>> = stamp!("image.png");
+/// static IMAGE: Stamp = stamp!("image.png");
 /// ```
 ///
 /// Compiling `main.rs` is going to statically embed the image in the binary.
@@ -46,11 +46,11 @@ use syn::{
 /// For example, this fails to compile:
 ///
 /// ```rust,ignore
-/// use stockbook::{stamp, Size, Stamp};
+/// use stockbook::{stamp, Stamp};
 ///
 /// const IMAGE_PATH: &str = "image.png";
 ///
-/// static IMAGE: Stamp<Size<16, 12>> = stamp!(IMAGE_PATH); // passing an identifier, not a string literal
+/// static IMAGE: Stamp = stamp!(IMAGE_PATH); // passing an identifier, not a string literal
 /// ```
 ///
 /// ## Relative paths
@@ -194,7 +194,7 @@ impl ToTokens for Stamp {
 
         tokens.extend(quote! {
             unsafe {
-                ::stockbook::Stamp::<::stockbook::Size<#width, #height>>::from_raw_unchecked(#array)
+                ::stockbook::Stamp::from_raw_unchecked(#width, #height, #array)
             }
         });
     }
