@@ -1,6 +1,6 @@
 [package]
 name = "stockbook"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Karol Belina <karolbelina@gmail.com>"]
 edition = "2021"
 description = "1-bit image embedding at compile time"
@@ -18,7 +18,7 @@ progmem = ["avr-progmem", "stockbook-stamp-macro/progmem"]
 [dependencies]
 avr-progmem = { version = ">=0.2.0, <0.4.0", optional = true }
 cfg-if = "1.0.0"
-stockbook-stamp-macro = { version = "=0.2.0", path = "macro" }
+stockbook-stamp-macro = { version = "=0.3.0", path = "macro" }
 
 [workspace]
 members = ["macro"]
