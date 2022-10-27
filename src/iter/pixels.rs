@@ -5,7 +5,7 @@ use core::iter::FusedIterator;
 ///
 /// This type is created by the [`pixels`](Stamp::pixels) method on [`Stamp`]. See
 /// its documentation for more details.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pixels<'a> {
     cursor: Cursor<'a>,
     cursor_back: CursorBack<'a>,
@@ -23,7 +23,7 @@ impl<'a> Pixels<'a> {
 }
 
 /// An iterator that cycles throygh all pixels of a [`Stamp`] from front to back.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Cursor<'a> {
     x: usize,
     y: usize,
@@ -57,7 +57,7 @@ impl Iterator for Cursor<'_> {
 }
 
 /// An iterator that cycles throygh all pixels of a [`Stamp`] from back to front.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct CursorBack<'a> {
     x: usize,
     y: usize,
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_zero_size_stamp() {
-        let stamp = Stamp::from_raw(0, 0, &[]);
+        let stamp = unsafe { Stamp::from_raw(0, 0, [].as_ptr()) };
         let mut pixels = stamp.pixels();
 
         assert_eq!(pixels.next(), None);
@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_zero_width_stamp() {
-        let stamp = Stamp::from_raw(0, 3, &[]);
+        let stamp = unsafe { Stamp::from_raw(0, 3, [].as_ptr()) };
         let mut pixels = stamp.pixels();
 
         assert_eq!(pixels.next(), None);
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_zero_height_stamp() {
-        let stamp = Stamp::from_raw(3, 0, &[]);
+        let stamp = unsafe { Stamp::from_raw(3, 0, [].as_ptr()) };
         let mut pixels = stamp.pixels();
 
         assert_eq!(pixels.next(), None);
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_double_ended() {
-        let stamp = Stamp::from_raw(2, 2, &[0b1010_0000]);
+        let stamp = unsafe { Stamp::from_raw(2, 2, [0b1010_0000].as_ptr()) };
         let mut pixels = stamp.pixels();
 
         assert_eq!(pixels.next(), Some((0, 0, Color::White)));
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_rev() {
-        let stamp = Stamp::from_raw(2, 2, &[0b1010_0000]);
+        let stamp = unsafe { Stamp::from_raw(2, 2, [0b1010_0000].as_ptr()) };
         let mut pixels = stamp.pixels().rev();
 
         assert_eq!(pixels.next(), Some((1, 1, Color::Black)));

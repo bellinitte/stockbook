@@ -12,7 +12,12 @@ categories = ["embedded", "encoding", "graphics", "no-std"]
 documentation = "https://docs.rs/stockbook"
 exclude = [".github", "docs"]
 
+[features]
+progmem = ["avr-progmem", "stockbook-stamp-macro/progmem"]
+
 [dependencies]
+avr-progmem = { version = ">=0.2.0, <0.4.0", optional = true }
+cfg-if = "1.0.0"
 stockbook-stamp-macro = { version = "=0.2.0", path = "macro" }
 
 [workspace]

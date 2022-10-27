@@ -6,7 +6,7 @@
 
 Stockbook embeds 1-bit raster images in your code at compile time.
 
-Designed primarily for `#![no_std]` usage, in embedded or other program-memory-constrained environments.
+Designed primarily for `#![no_std]` usage, in embedded or other program-memory-constrained environments. Compatible with [`avr-progmem`](https://crates.io/crates/avr_progmem).
 
 ```toml
 [dependencies]
@@ -45,6 +45,10 @@ fn draw_pixel_at(x: usize, y: usize) {
 ## Supported formats
 
 Stockbook uses the [image](https://docs.rs/image) crate under the hood. See its own [list of supported formats](https://docs.rs/image/latest/image/codecs/index.html#supported-formats) for more details.
+
+## Feature flags
+
+- **`progmem`** &mdash; wraps all pixel data of `Stamp`s in [`avr_progmem::wrapper::ProgMem`](https://docs.rs/avr-progmem/latest/avr_progmem/wrapper/struct.ProgMem.html)s. Combined with the `avr` target architecture, this allows you to keep most of the data in program memory without the need to copy it to RAM. A no-op for non-`avr` target architectures.
 
 ## Unstable features
 
