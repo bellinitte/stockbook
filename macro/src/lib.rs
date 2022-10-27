@@ -22,6 +22,10 @@ use syn::{
 /// This macro will encode the image and yield an expression of type
 /// [`Stamp`][Stamp] with the pixel data included.
 ///
+/// If the `"progmem"` feature is enabled and the target architecture is set to
+/// `avr`, the pixel data will be placed into the `.progmem.data` section using the
+/// `#[link_section = ".progmem.data"]` attribute.
+///
 /// # Examples
 ///
 /// Assume there are two files in the same directory: a 16x12 pixel image
@@ -168,33 +172,37 @@ impl ToTokens for Stamp {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let width = self.width;
         let height = self.height;
-        let array = syn::ExprReference {
+        let array_len = self.data.len();
+        let array = syn::ExprArray {
             attrs: Default::default(),
-            and_token: Default::default(),
-            raw: Default::default(),
-            mutability: Default::default(),
-            expr: Box::new(syn::Expr::Array(syn::ExprArray {
-                attrs: Default::default(),
-                bracket_token: Default::default(),
-                elems: self
-                    .data
-                    .iter()
-                    .map(|byte| {
-                        syn::Expr::Lit(syn::ExprLit {
-                            attrs: Default::default(),
-                            lit: syn::Lit::Int(syn::LitInt::new(
-                                &byte.to_string(),
-                                Span::call_site(),
-                            )),
-                        })
+            bracket_token: Default::default(),
+            elems: self
+                .data
+                .iter()
+                .map(|byte| {
+                    syn::Expr::Lit(syn::ExprLit {
+                        attrs: Default::default(),
+                        lit: syn::Lit::Int(syn::LitInt::new(&byte.to_string(), Span::call_site())),
                     })
-                    .collect(),
-            })),
+                })
+                .collect(),
         };
 
+        #[cfg(feature = "progmem")]
+        let progmem_attr = quote! {
+            #[cfg_attr(target_arch = "avr", link_section = ".progmem.data")]
+        };
+        #[cfg(not(feature = "progmem"))]
+        let progmem_attr = TokenStream2::new();
+
         tokens.extend(quote! {
-            unsafe {
-                ::stockbook::Stamp::from_raw_unchecked(#width, #height, #array)
+            {
+                #progmem_attr
+                static PIXEL_DATA: [u8; #array_len] = #array;
+
+                unsafe {
+                    ::stockbook::Stamp::from_raw(#width, #height, PIXEL_DATA.as_ptr())
+                }
             }
         });
     }
